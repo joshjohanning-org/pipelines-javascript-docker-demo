@@ -2,7 +2,7 @@
 # Getting Started
 
 ```bash
-Create a resource group
+# Create a resource group
 az group create --name js-docker-pipelines-demo-rg --location eastus
 
 # Create a container registry
