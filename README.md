@@ -15,4 +15,7 @@ az aks create \
     --node-count 1 \
     --enable-addons monitoring \
     --generate-ssh-keys
+
+# Cleanup resources
+az group delete --name js-docker-pipelines-demo-rg --yes
 ```

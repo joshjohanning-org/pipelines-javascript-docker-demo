@@ -22,7 +22,7 @@ variables:
   vmImageName: 'ubuntu-latest'
   
   # Name of the new namespace being created to deploy the PR changes.
-  k8sNamespaceForPR: '$(system.pullRequest.sourceBranch)'
+  k8sNamespaceForPR: '$(Build.SourceBranchName)'
 
 stages:
 - stage: Build
@@ -33,6 +33,10 @@ stages:
     pool:
       vmImage: $(vmImageName)
     steps:
+    - script: echo system.pullrequest.sourcebranch $(system.pullRequest.sourceBranch)
+    - script: echo Build.sourcebranch $(Build.SourceBranch)
+    - script: echo sourcebranch name $(system.pullRequest.sourceBranchName)
+    - script: echo sourcebranchname $(Build.SourceBranchName)
     - task: Docker@2
       displayName: Build and push an image to container registry
       inputs:
@@ -42,6 +46,7 @@ stages:
         containerRegistry: $(dockerRegistryServiceConnection)
         tags: |
           $(tag)
+          latest
           
     - upload: manifests
       artifact: manifests
@@ -93,26 +98,32 @@ stages:
           steps:
           - reviewApp: default
 
+          - bash: |
+              ${{ format('k8snamespace=$(echo "{0}" | tr "[:upper:]" "[:lower:]" | tr -d "-")
+              echo "##vso[task.setvariable variable=k8snamespace]$k8snamespace"',
+                  variables.k8sNamespaceForPR ) }}
+            displayName: Convert branch namespace to lower case and remove dashes
+
           - task: Kubernetes@1
             displayName: 'Create a new namespace for the pull request'
             inputs:
               command: apply
               useConfigurationFile: true
-              inline: '{ "kind": "Namespace", "apiVersion": "v1", "metadata": { "name": "$(k8sNamespaceForPR)" }}'
+              inline: '{ "kind": "Namespace", "apiVersion": "v1", "metadata": { "name": "$(k8snamespace)" }}'
 
           - task: KubernetesManifest@0
             displayName: Create imagePullSecret
             inputs:
               action: createSecret
               secretName: $(imagePullSecret)
-              namespace: $(k8sNamespaceForPR)
+              namespace: $(k8snamespace)
               dockerRegistryEndpoint: $(dockerRegistryServiceConnection)
           
           - task: KubernetesManifest@0
             displayName: Deploy to the new namespace in the Kubernetes cluster
             inputs:
               action: deploy
-              namespace: $(k8sNamespaceForPR)
+              namespace: $(k8snamespace)
               manifests: |
                 $(Pipeline.Workspace)/manifests/deployment.yml
                 $(Pipeline.Workspace)/manifests/service.yml
@@ -127,11 +138,12 @@ stages:
             continueOnError: true
             inputs:
               command: get
-              namespace: $(k8sNamespaceForPR)
+              namespace: $(k8snamespace)
               arguments: svc
               outputFormat: jsonpath='http://{.items[0].status.loadBalancer.ingress[0].ip}:{.items[0].spec.ports[0].port}'
               
           # Getting the IP of the deployed service and writing it to a variable for posing comment
+          # this doesn't work for azdo
           - script: |
               url="$(get.KubectlOutput)"
               message="Your review app has been deployed"
