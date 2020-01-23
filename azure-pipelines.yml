@@ -99,7 +99,7 @@ stages:
           - bash: |
               ${{ format('k8snamespace=$(echo "{0}" | tr "[:upper:]" "[:lower:]" | tr -d "-")
               echo "##vso[task.setvariable variable=k8snamespace]$k8snamespace"',
-                  variables.k8sNamespaceForPR ) }}
+                  $k8sNamespaceForPR ) }}
             displayName: Convert branch namespace to lower case and remove dashes
 
           - task: Kubernetes@1
