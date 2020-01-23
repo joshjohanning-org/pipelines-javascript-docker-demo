@@ -96,6 +96,12 @@ stages:
           steps:
           - reviewApp: default
 
+          - bash: |
+              ${{ format('k8snamespace=$(echo "{0}" | tr "[:upper:]" "[:lower:]" | tr - "")
+              echo "##vso[task.setvariable variable=k8snamespace]$k8snamespace"',
+                  parameters.k8sNamespaceForPR ) }}
+            displayName: Convert branch namespace to lower case and remove dashes
+
           - task: Kubernetes@1
             displayName: 'Create a new namespace for the pull request'
             inputs:
