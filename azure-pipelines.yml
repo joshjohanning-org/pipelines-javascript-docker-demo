@@ -22,7 +22,7 @@ variables:
   vmImageName: 'ubuntu-latest'
   
   # Name of the new namespace being created to deploy the PR changes.
-  k8sNamespaceForPR: '$(system.pullRequest.sourceBranchName)'
+  k8sNamespaceForPR: '$(Build.SourceBranchName)'
 
 stages:
 - stage: Build
@@ -36,6 +36,7 @@ stages:
     - script: echo system.pullrequest.sourcebranch $(system.pullRequest.sourceBranch)
     - script: echo Build.sourcebranch $(Build.SourceBranch)
     - script: echo sourcebranch name $(system.pullRequest.sourceBranchName)
+    - script: echo sourcebranchname $(Build.SourceBranchName)
     - task: Docker@2
       displayName: Build and push an image to container registry
       inputs:
