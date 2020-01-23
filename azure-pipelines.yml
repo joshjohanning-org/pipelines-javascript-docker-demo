@@ -11,12 +11,12 @@ resources:
 variables:
 
   # Container registry service connection established during pipeline creation
-  dockerRegistryServiceConnection: 'f12b5cff-c585-4c1e-8f85-6a33380dfe5f'
-  imageRepository: 'pipelinesjavascriptdockerdemo'
+  dockerRegistryServiceConnection: '094a7ab8-de47-4f65-b23a-bde7c343ccf3'
+  imageRepository: 'soccerjoshjpipelinesjavascriptdockerdemo'
   containerRegistry: 'jsdockerpipelinesdemoacr.azurecr.io'
   dockerfilePath: '**/Dockerfile'
   tag: '$(Build.BuildId)'
-  imagePullSecret: 'jsdockerpipelinesdemoacr1955f445-auth'
+  imagePullSecret: 'jsdockerpipelinesdemoacr64034a41-auth'
 
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
@@ -56,7 +56,7 @@ stages:
     displayName: Deploy
     pool:
       vmImage: $(vmImageName)
-    environment: 'pipelinesjavascriptdockerdemo-1215.default'
+    environment: 'pipelinesjavascriptdockerdemo-1059.default'
     strategy:
       runOnce:
         deploy:
@@ -64,21 +64,22 @@ stages:
           - task: KubernetesManifest@0
             displayName: Create imagePullSecret
             inputs:
-              action: createSecret
-              secretName: $(imagePullSecret)
-              dockerRegistryEndpoint: $(dockerRegistryServiceConnection)
+              action: 'createSecret'
+              namespace: 'default'
+              secretType: 'dockerRegistry'
+              secretName: '$(imagePullSecret)'
+              dockerRegistryEndpoint: '$(dockerRegistryServiceConnection)'
               
           - task: KubernetesManifest@0
             displayName: Deploy to Kubernetes cluster
             inputs:
-              action: deploy
+              action: 'deploy'
+              namespace: 'default'
               manifests: |
                 $(Pipeline.Workspace)/manifests/deployment.yml
                 $(Pipeline.Workspace)/manifests/service.yml
-              imagePullSecrets: |
-                $(imagePullSecret)
-              containers: |
-                $(containerRegistry)/$(imageRepository):$(tag)
+              containers: '$(containerRegistry)/$(imageRepository):$(tag)'
+              imagePullSecrets: '$(imagePullSecret)'
 
   - deployment: DeployPullRequest
     displayName: Deploy Pull request
@@ -86,7 +87,7 @@ stages:
     pool:
       vmImage: $(vmImageName)
       
-    environment: 'pipelinesjavascriptdockerdemo-1215.$(k8sNamespaceForPR)'
+    environment: 'pipelinesjavascriptdockerdemo-1059.$(k8sNamespaceForPR)'
     strategy:
       runOnce:
         deploy:
